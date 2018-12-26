@@ -9,25 +9,25 @@ import javax.servlet.http.HttpSession;
 import java.io.*;
 
 public class MyFirstServlet extends HttpServlet {
-    protected HttpServletRequest request;
-    protected HttpServletResponse response;
+    //protected HttpServletRequest request;
+    //protected HttpServletResponse response;
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        this.request = req;
-        this.response = resp;
+        //this.request = req;
+        //this.response = resp;
 
-        String login = this.request.getParameter("login");
-        String password = this.request.getParameter("password");
+        String login = req.getParameter("login");
+        String password = req.getParameter("password");
         PrintWriter out = resp.getWriter();
 
         HttpSession session = req.getSession();
 
-        if(!session.isNew()) {
+        if(!session.isNew()&session.getAttribute("login")!=null) {
             out.print("Access granted. \n Welcome, " + session.getAttribute("login"));
         }
 
-        else if(isValid(login, password)) {
+        else if(isValid(login, password, req, resp)) {
             out.print("Access granted. \n Welcome, " + login);
             session.setAttribute("login", login);
             session.setAttribute("password", password);
@@ -39,7 +39,7 @@ public class MyFirstServlet extends HttpServlet {
         this.doGet(req, resp);
     }
 
-    protected boolean isValid(String login, String password) {
+    protected boolean isValid(String login, String password, HttpServletRequest req, HttpServletResponse resp) {
         String line = "";
         boolean valid = false;
         boolean isLogin = false;
@@ -55,13 +55,13 @@ public class MyFirstServlet extends HttpServlet {
                         valid = true;
                     }
                     else {
-                        sendError();
+                        sendError(req, resp);
                     }
                     break;
                 }
             }
             if(!isLogin) {
-                createUser();
+                createUser(req, resp);
             }
         } catch (FileNotFoundException e) {
             e.printStackTrace();
@@ -74,13 +74,13 @@ public class MyFirstServlet extends HttpServlet {
         return valid;
     }
 
-    protected void createUser() throws ServletException, IOException {
-        RequestDispatcher view = this.request.getRequestDispatcher("create.html");
-        view.forward(this.request, this.response);
+    protected void createUser(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        RequestDispatcher view = req.getRequestDispatcher("create.html");
+        view.forward(req, resp);
     }
 
-    protected void sendError() throws ServletException, IOException {
-        RequestDispatcher view = this.request.getRequestDispatcher("error.html");
-        view.forward(this.request, this.response);
+    protected void sendError(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        RequestDispatcher view = req.getRequestDispatcher("error.html");
+        view.forward(req, resp);
     }
 }

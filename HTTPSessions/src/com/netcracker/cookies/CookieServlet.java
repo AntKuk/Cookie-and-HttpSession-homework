@@ -1,40 +1,38 @@
 package com.netcracker.cookies;
 
-import com.netcracker.httpsessions.MyFirstServlet;
-
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
 import javax.servlet.http.Cookie;
+import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.*;
 
-public class CookieServlet extends MyFirstServlet {
+public class CookieServlet extends HttpServlet {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        super.request = req;
-        super.response = resp;
 
-        String login = super.request.getParameter("login");
-        String password = super.request.getParameter("password");
-        PrintWriter out = super.response.getWriter();
-        String checkbox = super.request.getParameter("checkbox");
 
-        Cookie[] cookies = super.request.getCookies();
+        String login = req.getParameter("login");
+        String password = req.getParameter("password");
+        PrintWriter out = resp.getWriter();
+        String checkbox = req.getParameter("checkbox");
+
+        Cookie[] cookies = req.getCookies();
         if( cookies != null ) {
             if(isLoginInCookie(login, cookies)) {
                 out.print("Access granted. \n Welcome, " + login);
             }
             else if(!login.isEmpty()) {
-                validation(login, password, checkbox, out);
+                validation(login, password, checkbox, out, req, resp);
             }
             else {
                 out.print("Please, log in again or insert only login if you`ve logged in succed earlier");
             }
         }
         else {
-            validation(login, password, checkbox, out);
+            validation(login, password, checkbox, out, req, resp);
         }
 
         out.close();
@@ -55,11 +53,11 @@ public class CookieServlet extends MyFirstServlet {
         return false;
     }
 
-    private void validation(String login, String password, String checkbox, PrintWriter out) {
-        if(isValid(login, password)) {
+    private void validation(String login, String password, String checkbox, PrintWriter out, HttpServletRequest req, HttpServletResponse resp) {
+        if(isValid(login, password, req, resp)) {
             if("on".equals(checkbox)) {
                 Cookie user = new Cookie(login, password);;
-                super.response.addCookie(user);
+                resp.addCookie(user);
                 out.print("Access granted. \n Welcome, " + login);
             }
             else {
@@ -71,7 +69,7 @@ public class CookieServlet extends MyFirstServlet {
 
 
 
-    protected boolean isValid(String login, String password) {
+    protected boolean isValid(String login, String password, HttpServletRequest req, HttpServletResponse resp) {
         String line = "";
         boolean valid = false;
         boolean isLogin = false;
@@ -87,13 +85,13 @@ public class CookieServlet extends MyFirstServlet {
                         valid = true;
                     }
                     else {
-                        sendError(login);
+                        sendError(login, req, resp);
                     }
                     break;
                 }
             }
             if(!isLogin) {
-                createUser();
+                createUser(req, resp);
             }
         } catch (FileNotFoundException e) {
             e.printStackTrace();
@@ -106,12 +104,16 @@ public class CookieServlet extends MyFirstServlet {
         return valid;
     }
 
+    protected void createUser(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        RequestDispatcher view = req.getRequestDispatcher("create.html");
+        view.forward(req, resp);
+    }
 
-    protected void sendError(String login) throws ServletException, IOException {
+    protected void sendError(String login, HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         int n = 0;
         String nameCookie = "errors" + login;
 
-        Cookie[] cookies = super.request.getCookies();
+        Cookie[] cookies = req.getCookies();
         if(cookies != null) {
             for(int i = 0; i < cookies.length; i++) {
                 Cookie cookie = cookies[i];
@@ -123,18 +125,18 @@ public class CookieServlet extends MyFirstServlet {
         }
 
         if(n>3) {
-            updateUser(login);
+            updateUser(login, req, resp);
             return;
         }
 
         Cookie error = new Cookie("errors"+login, Integer.toString(n+1));
-        super.response.addCookie(error);
+        resp.addCookie(error);
 
-        RequestDispatcher view = super.request.getRequestDispatcher("error.html");
-        view.forward(super.request, super.response);
+        RequestDispatcher view = req.getRequestDispatcher("error.html");
+        view.forward(req, resp);
     }
 
-    private void updateUser(String login) throws IOException {
+    private void updateUser(String login, HttpServletRequest req, HttpServletResponse resp) throws IOException {
         String html = "<!DOCTYPE html>\n" +
                 "<html lang=\"en\">\n" +
                 "<head>\n" +
@@ -152,7 +154,7 @@ public class CookieServlet extends MyFirstServlet {
                 "</body>\n" +
                 "</html>";
 
-        PrintWriter out = super.response.getWriter();
+        PrintWriter out = resp.getWriter();
         deleteUser(login);
         out.print(html);
     }
